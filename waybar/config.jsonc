@@ -1,0 +1,197 @@
+{
+
+  "layer": "top",
+  "modules-left": ["custom/launcher",   "custom/walpaper", "custom/weather",  "disk", "memory", "cpu", "temperature","hyprland/workspaces"],
+  "modules-center": ["clock"],
+  "modules-right": ["custom/spotify",  "tray", "privacy", "hyprland/language", "network", "backlight", "wireplumber", "battery", "custom/power"],
+
+
+	
+"wireplumber": {
+        "on-click": "pavucontrol",
+        "on-click-right": "amixer sset Master toggle 1>/dev/null",
+        //on-click: "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle";
+        //on-scroll-down: "${wpctl} set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 0.04+";
+        //on-scroll-up: "${wpctl} set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 0.04-";
+        "format": "<span foreground='#fab387'>{icon}</span>  {volume}%",
+        "format-muted": " ",
+        "format-source": "",
+        "format-source-muted": "",
+        //"format-muted": "<span foreground='#fab387'> </span>",
+        //"format-icons": [ "<span foreground='#fab387'></span>" ]
+        "format-icons": {
+            "headphone": " ",
+            "hands-free": " ",
+            "headset": " ",
+            "phone": " ",
+            "portable": " ",
+            "car": " ",
+            "default": [" ", " ", " "]
+        },
+        },
+    "backlight": {
+        "device": "intel_backlight",
+        "format": "{icon}  {percent}%",
+        "format-icons": ["", ""]
+    },
+       "battery": {
+	//"interval": 5,
+	"align": 0,
+	"rotate": 0,
+	//"bat": "BAT1",
+	//"adapter": "ACAD",
+	"full-at": 100,
+	"design-capacity": false,
+	"states": {
+		"good": 95,
+		"warning": 30,
+		"critical": 15
+	},
+	"format": "{icon} {capacity}%",
+	"format-charging": " {capacity}%",
+	"format-plugged": "󱘖 {capacity}%",
+	"format-alt-click": "click",
+	"format-full": "{icon} Full",
+	"format-alt": "{icon} {time}",
+	"format-icons": [
+		"󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"
+	],
+	},
+
+    "disk": {
+        "interval": 30,
+        "format": "  {percentage_used}%",
+        "path": "/"
+    },
+    "privacy": {
+        "icon-spacing": 10,
+        "icon-size": 18,
+        "transition-duration": 250,
+        "tooltip": false,
+        "modules": [
+            {
+                "type": "screenshare",
+                "tooltip": true,
+                "tooltip-icon-size": 24
+            },
+            {
+                "type": "audio-out",
+                "tooltip": true,
+                "tooltip-icon-size": 24
+            },
+            {
+                "type": "audio-in",
+                "tooltip": true,
+                "tooltip-icon-size": 24
+            }
+        ]
+    },
+
+
+    "hyprland/language": {
+        "format": "  {1}",
+        "tooltip": false,
+    },
+
+"custom/spotify": {
+    "exec": "/usr/bin/python3 ~/mediaplayer.py --player spotify",
+    "format": "{}  ",
+    "return-type": "json",
+    "on-click": "playerctl play-pause",
+    "on-double-click-right": "playerctl next",
+    "on-triple-click-right": "playerctl previous"
+},
+
+"custom/weather": {
+    "format": "{}",
+    "exec": "cat ~/temperature.json | jq -r '.text'",
+    "interval": 60
+},
+
+
+"temperature": {
+  "format": " {temperatureC}°C",
+  "format-critical": " {temperatureC}°C",
+  "interval": 1,
+  "critical-threshold": 80,
+  "on-click": "foot btop",
+ },
+
+  "cpu": {
+      "interval": 1,
+      "format": " {usage}%",
+      "min-length": 6,
+      "max-length": 6,
+      "format-icons": ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"],
+ },
+
+"memory": {
+  "format": " {percentage}%"
+},
+
+    "custom/launcher":{
+        "format": " ",
+        "on-click": "rofi -show drun",
+        "on-click-right": "killall rofi",
+        "tooltip": false,
+    },
+ "custom/power": {
+    "format": "⏻ ",
+    "tooltip": false,
+    "on-click": "~/.config/rofi/applets/bin/powermenu.sh",
+    "on-click-right": "killall rofi"
+},
+
+      "custom/walpaper": {
+    "format": ""    ,
+    "on-click": "~/Downloads/wallpaper-switcher-main/scripts/changeWallpaper2"
+    "tooltip": false
+  },
+   "clock": {
+	"interval": 1,
+    //"format": " {:%I:%M %p}", // AM PM format
+    "format": " {:%H:%M:%S}", // 24H
+	"format-alt": " {:%H:%M   %Y, %d %B, %A}",
+	"tooltip-format": "<tt><small>{calendar}</small></tt>",
+	"calendar": {
+		"mode": "year",
+		"mode-mon-col": 3,
+		"weeks-pos": "right",
+		"on-scroll": 1,
+		"format": {
+			"months": "<span color='#ffead3'><b>{}</b></span>",
+			"days": "<span color='#ecc6d9'><b>{}</b></span>",
+			"weeks": "<span color='#99ffdd'><b>W{}</b></span>",
+			"weekdays": "<span color='#ffcc66'><b>{}</b></span>",
+			"today": "<span color='#ff6699'><b><u>{}</u></b></span>"
+		}
+	}
+
+    },
+    "hyprland/workspaces": {
+        "format": "{icon}",
+        "tooltip": false,
+        "format-icons": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": "",
+            "5": "",
+            "urgent": "",
+            "active": "",
+            "default": ""
+    },
+    "tray": {
+    "icon-size": 21,
+    "spacing": 10
+}
+    },
+    "network": {
+        "interface": "wlan0",
+        "format-wifi": "󰘊 {essid}({signalStrength}%)",
+        "format-ethernet": "  {ipaddr}/{cidr}",
+        "format-disconnected": "disconnected",
+        "tooltip": false,
+        "max-length": 50,
+    }
+}
