@@ -93,20 +93,21 @@
         "tooltip": false,
     },
 
- "custom/spotify": {
-    "exec": "/usr/bin/python3 /home/eko/mediaplayer.py --player spotify",
+"custom/spotify": {
+    "exec": "/usr/bin/python3 ~/mediaplayer.py --player spotify",
     "format": "{}  ",
     "return-type": "json",
     "on-click": "playerctl play-pause",
     "on-double-click-right": "playerctl next",
     "on-triple-click-right": "playerctl previous"
-    },
+},
 
 "custom/weather": {
     "format": "{}",
-    "exec": "cat /home/eko/temperature.json | jq -r '.text'",
+    "exec": "cat ~/temperature.json | jq -r '.text'",
     "interval": 60
 },
+
 
 "temperature": {
   "format": " {temperatureC}°C",
@@ -134,12 +135,15 @@
         "on-click-right": "killall rofi",
         "tooltip": false,
     },
-    "custom/power":{
-        "format": "⏻ ",
-        "tooltip": false,
-        "on-click": "/home/eko/.config/rofi/applets/bin/powermenu.sh",
-        "on-click-right": "killall rofi",
-    },
+
+"custom/power": {
+    "format": "⏻ ",
+    "tooltip": false,
+    "on-click": "~/.config/rofi/files/scripts/powermenu_t4",
+    "on-click-right": "killall rofi"
+},
+
+
       "custom/walpaper": {
     "format": ""    ,
     "on-click": "/home/eko/Downloads/wallpaper-switcher-main/scripts/changeWallpaper2",
