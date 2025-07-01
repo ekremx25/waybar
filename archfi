@@ -1,0 +1,362 @@
+#!/bin/bash
+
+# Arch Linux Fast Install (archfi)
+# --------------------------------
+# Hyprland Desktop Edition
+# author    : MatMoul
+# modified by: ChatGPT
+# project   : https://github.com/MatMoul/archfi
+# license   : LGPL-3.0
+
+apptitle="Arch Linux Fast Install (archfi) - Hyprland Desktop Edition"
+baseurl=https://raw.githubusercontent.com/MatMoul/archfi/master
+cpl=0
+skipfont="0"
+fspkgs=""
+
+# [Previous functions remain the same until installbase()]
+
+installbase(){
+	pkgs="base base-devel linux linux-firmware"
+	
+	# Hyprland and core components
+	hyprpkgs="hyprland waybar rofi swaync qt5ct qt6ct kvantum"
+	
+	# Essential applications
+	appspkgs="dolphin kitty firefox noto-fonts noto-fonts-cjk noto-fonts-emoji"
+	
+	# Utilities and system components
+	utilspkgs="git wget curl nano vim networkmanager pipewire pipewire-pulse wireplumber bluez bluez-utils brightnessctl"
+	
+	options=()
+	options+=("linux" "" on)
+	options+=("linux-lts" "" off)
+	options+=("linux-zen" "" off)
+	options+=("linux-hardened" "" off)
+	sel=$(dialog --backtitle "${apptitle}" --title "${txtinstallarchlinuxkernel}" --menu "" 0 0 0 \
+		"${options[@]}" \
+		3>&1 1>&2 2>&3)
+	if [ "$?" = "0" ]; then
+		pkgs+=" ${sel}"
+	else
+		return 1
+	fi
+	
+	# Hyprland desktop selection
+	if (dialog --backtitle "${apptitle}" --title "Desktop Environment" --yesno "Install Hyprland Wayland compositor with complete desktop environment?" 0 0) then
+		pkgs+=" ${hyprpkgs} ${appspkgs} ${utilspkgs}"
+	else
+		# Minimal install without desktop
+		pkgs+=" ${utilspkgs}"
+	fi
+
+	# Filesystem tools
+	options=()
+	if [[ "${fspkgs}" == *"dosfstools"* ]]; then
+		options+=("dosfstools" "" on)
+	else
+		options+=("dosfstools" "" off)
+	fi
+	if [[ "${fspkgs}" == *"btrfs-progs"* ]]; then
+		options+=("btrfs-progs" "" on)
+	else
+		options+=("btrfs-progs" "" off)
+	fi
+	# [Other filesystem tools...]
+
+	sel=$(dialog --backtitle "${apptitle}" --title "${txtinstallarchlinuxfilesystems}" --checklist "" 0 0 0 \
+		"${options[@]}" \
+		3>&1 1>&2 2>&3)
+	if [ ! "$?" = "0" ]; then
+		return 1
+	fi
+	for itm in $sel; do
+		pkgs="$pkgs $(echo $itm | sed 's/"//g')"
+	done
+	
+	# Custom package list
+	if [[ ${cpl} == 1 ]]; then
+		sed -i '/^\s*$/d' /tmp/archfi-custom-package-list
+		sed -i '/^#/ d' /tmp/archfi-custom-package-list
+		options=()
+		while read pkg; do
+			options+=("${pkg}" "" on)
+		done < /tmp/archfi-custom-package-list
+		sel=$(dialog --backtitle "${apptitle}" --title "${txtinstallarchlinuxcustompackagelist}" --checklist "" 0 0 0 \
+			"${options[@]}" \
+			3>&1 1>&2 2>&3)
+		if [ ! "$?" = "0" ]; then
+			return 1
+		fi
+		for itm in $sel; do
+			pkgs="$pkgs $(echo $itm | sed 's/"//g')"
+		done
+	fi
+	
+	clear
+	echo "pacstrap /mnt ${pkgs}"
+	pacstrap /mnt ${pkgs}
+	
+	# Configure parallel downloads if set
+	if [ ! -z $numpkg ]; then
+		sed -i "s/.*ParallelDownloads.*/ParallelDownloads = ${numpkg}/" /mnt/etc/pacman.conf	
+	fi
+	
+	pressanykey
+}
+
+installhyprlandconfig(){
+	# Create necessary directories
+	mkdir -p /mnt/etc/skel/.config/hypr
+	mkdir -p /mnt/etc/skel/.config/waybar
+	mkdir -p /mnt/etc/skel/.config/rofi
+	mkdir -p /mnt/etc/skel/.config/kitty
+	
+	# Hyprland configuration
+	cat << EOF > /mnt/etc/skel/.config/hypr/hyprland.conf
+# Hyprland Configuration
+exec-once = waybar
+exec-once = swaync
+exec-once = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
+exec-once = systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
+exec-once = /usr/lib/polkit-kde-authentication-agent-1
+
+# Input configuration
+input {
+    kb_layout = us
+    follow_mouse = 1
+    touchpad {
+        natural_scroll = yes
+    }
+}
+
+# General appearance
+general {
+    gaps_in = 5
+    gaps_out = 10
+    border_size = 2
+    col.active_border = rgba(33ccffee) rgba(00ff99ee) 45deg
+    col.inactive_border = rgba(595959aa)
+}
+
+# Decoration
+decoration {
+    rounding = 5
+    blur {
+        enabled = true
+        size = 3
+        passes = 1
+    }
+    drop_shadow = yes
+    shadow_range = 4
+    shadow_render_power = 3
+    col.shadow = rgba(1a1a1aee)
+}
+
+# Animations
+animations {
+    enabled = yes
+    bezier = myBezier, 0.05, 0.9, 0.1, 1.05
+    animation = windows, 1, 7, myBezier
+    animation = windowsOut, 1, 7, default, popin 80%
+    animation = border, 1, 10, default
+    animation = fade, 1, 7, default
+}
+
+# Layout
+dwindle {
+    pseudotile = yes
+    preserve_split = yes
+}
+
+master {
+    new_is_master = true
+}
+
+# Misc
+misc {
+    disable_hyprland_logo = true
+    disable_splash_rendering = true
+}
+
+# Keybindings
+$mainMod = SUPER
+
+bind = $mainMod, Return, exec, kitty
+bind = $mainMod, Q, killactive, 
+bind = $mainMod, F, fullscreen, 
+bind = $mainMod, E, exec, dolphin
+bind = $mainMod, V, togglefloating, 
+bind = $mainMod, D, exec, rofi -show drun
+bind = $mainMod, P, pseudo, # dwindle
+bind = $mainMod, J, togglesplit, # dwindle
+EOF
+
+	# Waybar configuration
+	cat << EOF > /mnt/etc/skel/.config/waybar/config
+{
+    "layer": "top",
+    "position": "top",
+    "height": 30,
+    "spacing": 4,
+    "modules-left": ["hyprland/workspaces", "hyprland/window"],
+    "modules-center": ["clock"],
+    "modules-right": ["pulseaudio", "network", "battery", "tray"],
+    
+    "hyprland/workspaces": {
+        "format": "{name}",
+        "on-click": "activate"
+    },
+    
+    "clock": {
+        "format": "{:%H:%M}",
+        "tooltip": "true",
+        "tooltip-format": "{:%A, %B %e, %Y}"
+    },
+    
+    "network": {
+        "format-wifi": " {essid}",
+        "format-ethernet": " {ifname} ({ipaddr})",
+        "format-disconnected": " Disconnected",
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr}"
+    },
+    
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": " Muted",
+        "format-icons": {
+            "headphones": "",
+            "default": ["", ""]
+        },
+        "on-click": "pactl set-sink-mute @DEFAULT_SINK@ toggle",
+        "tooltip": false
+    },
+    
+    "battery": {
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon} {capacity}%",
+        "format-icons": ["", "", "", "", ""],
+        "tooltip": false
+    }
+}
+EOF
+
+	# Kitty configuration
+	cat << EOF > /mnt/etc/skel/.config/kitty/kitty.conf
+# Kitty Terminal Config
+font_family      JetBrains Mono
+font_size        12
+bold_font        auto
+italic_font      auto
+bold_italic_font auto
+
+background_opacity 0.9
+
+# Colors
+foreground #dddddd
+background #1a1b26
+
+# Black
+color0 #414868
+color8 #414868
+
+# Red
+color1 #f7768e
+color9 #f7768e
+
+# Green
+color2  #9ece6a
+color10 #9ece6a
+
+# Yellow
+color3  #e0af68
+color11 #e0af68
+
+# Blue
+color4  #7aa2f7
+color12 #7aa2f7
+
+# Magenta
+color5  #bb9af7
+color13 #bb9af7
+
+# Cyan
+color6  #7dcfff
+color14 #7dcfff
+
+# White
+color7  #c0caf5
+color15 #c0caf5
+
+# Cursor
+cursor #c0caf5
+cursor_text_color #1a1b26
+
+# URL color
+url_color #7aa2f7
+EOF
+
+	# Environment variables
+	cat << EOF >> /mnt/etc/environment
+# QT and GTK settings
+QT_QPA_PLATFORM=wayland
+QT_QPA_PLATFORMTHEME=qt5ct
+QT_STYLE_OVERRIDE=kvantum
+GTK_THEME=Adwaita:dark
+MOZ_ENABLE_WAYLAND=1
+SDL_VIDEODRIVER=wayland
+CLUTTER_BACKEND=wayland
+EOF
+
+	# Enable services
+	archchroot enableservices
+	
+	pressanykey
+}
+
+enableserviceschroot(){
+	echo "Enabling essential services..."
+	systemctl enable NetworkManager
+	systemctl enable bluetooth
+	systemctl enable fstrim.timer
+	exit
+}
+
+# [Rest of the original script remains the same...]
+
+# --------------------------------------------------------
+# Main execution
+if [ "${chroot}" = "1" ]; then
+	case ${command} in
+		'setrootpassword') archsetrootpasswordchroot;;
+		'setlocale') archsetlocalechroot;;
+		'settimeutc') archsettimeutcchroot;;
+		'settimelocal') archsettimelocalchroot;;
+		'genmkinitcpio') archgenmkinitcpiochroot;;
+		'enabledhcpcd') archenabledhcpcdchroot;;
+		'enablenetworkmanager') archenablenetworkmanagerchroot;;
+		'enableservices') enableserviceschroot;;
+		'grubinstall') archgrubinstallchroot;;
+		'grubbootloaderinstall') archgrubinstallbootloaderchroot ${args};;
+		'grubbootloaderefiinstall') archgrubinstallbootloaderefichroot ${args};;
+		'grubbootloaderefiusbinstall') archgrubinstallbootloaderefiusbchroot ${args};;
+		'syslinuxbootloaderinstall') archsyslinuxinstallbootloaderchroot ${args};;
+		'syslinuxbootloaderefiinstall') archsyslinuxinstallbootloaderefichroot ${args};;
+		'systemdbootloaderinstall') archsystemdinstallchroot ${args};;
+		'refindbootloaderinstall') archrefindinstallchroot ${args};;
+		'archdiinstallandlaunch') archdiinstallandlaunchchroot;;
+		'archdiinstall') archdiinstallchroot;;
+		'archdilaunch') archdilaunchchroot;;
+	esac
+else
+	# [Initialization code remains the same...]
+	loadstrings
+	EDITOR=nano
+	mainmenu
+	rm dialog.archfi
+fi
+
+exit 0
